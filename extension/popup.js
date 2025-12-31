@@ -22,12 +22,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('contextUrl').textContent = currentUrl.length > 50 ? currentUrl.substring(0, 50) + '...' : currentUrl;
   document.getElementById('contextTime').textContent = new Date().toLocaleString();
 
-  chrome.storage.sync.get(['userEmail'], (result) => {
-    if (result.userEmail) {
-      document.getElementById('email').value = result.userEmail;
-    }
-  });
-
   const impactSlider = document.getElementById('impact');
   const impactValue = document.getElementById('impactValue');
 
@@ -67,9 +61,9 @@ async function handleSubmit(e) {
     category: document.getElementById('category').value,
     impact: parseInt(document.getElementById('impact').value),
     effort: 3,
-    email: document.getElementById('email').value,
-    reporterEmail: document.getElementById('email').value,
-    reporter: document.getElementById('email').value.split('@')[0],
+    email: '',
+    reporterEmail: '',
+    reporter: 'Anonymous',
     department: 'Not specified',
     geography: 'Global',
     riskType: [],
@@ -83,8 +77,6 @@ async function handleSubmit(e) {
     daysOpen: 0,
     screenshot: screenshotData
   };
-
-  chrome.storage.sync.set({ userEmail: formData.email });
 
   try {
     console.log('Attempting to report ghost:', ghostId);

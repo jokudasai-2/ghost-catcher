@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, addDoc } from 'firebase/firestore';
 import { db } from '../firebase-config';
 import type { Ghost } from '../types/ghost';
 
@@ -70,5 +70,14 @@ export function useGhosts() {
     }
   };
 
-  return { ghosts, loading, error, updateGhostStatus, updateGhost };
+  const addGhost = async (ghostData: Omit<Ghost, 'daysOpen' | 'firestoreId'>) => {
+    try {
+      await addDoc(collection(db, 'ghosts'), ghostData);
+    } catch (err) {
+      console.error('Error adding ghost:', err);
+      throw err;
+    }
+  };
+
+  return { ghosts, loading, error, updateGhostStatus, updateGhost, addGhost };
 }

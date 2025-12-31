@@ -32,6 +32,9 @@ export interface Ghost {
   resolutionNotes: string;
   daysOpen: number;
   screenshot?: string | null;
+  resolvedBy?: string;
+  resolvedAt?: string;
+  pointsAwarded?: number;
 }
 
 export interface GhostFilters {

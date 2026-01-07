@@ -1,5 +1,5 @@
-import { X, Calendar, User, Mail, Globe, ExternalLink, AlertCircle, Target } from 'lucide-react';
-import type { Ghost } from '../types/ghost';
+import { X, Calendar, User, Mail, Globe, ExternalLink, AlertCircle, Target, AlertTriangle, ArrowUpCircle } from 'lucide-react';
+import type { Ghost, GhostPriority } from '../types/ghost';
 import { useState } from 'react';
 
 interface GhostDetailModalProps {
@@ -13,6 +13,9 @@ export function GhostDetailModal({ ghost, onClose, onUpdateStatus, onUpdate }: G
   const [isUpdating, setIsUpdating] = useState(false);
   const [assignedTo, setAssignedTo] = useState(ghost.assignedTo || '');
   const [resolutionNotes, setResolutionNotes] = useState(ghost.resolutionNotes || '');
+  const [priority, setPriority] = useState<GhostPriority>(ghost.priority || 'Medium');
+  const [showEscalation, setShowEscalation] = useState(false);
+  const [escalationNotes, setEscalationNotes] = useState(ghost.escalationNotes || '');
 
   const handleStatusChange = async (newStatus: Ghost['status']) => {
     setIsUpdating(true);
@@ -31,11 +34,46 @@ export function GhostDetailModal({ ghost, onClose, onUpdateStatus, onUpdate }: G
       await onUpdate(ghost.id, {
         assignedTo: assignedTo || null,
         resolutionNotes,
+        priority,
+        escalationNotes,
       });
     } catch (error) {
       console.error('Failed to update ghost:', error);
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleEscalate = async () => {
+    setIsUpdating(true);
+    try {
+      await onUpdate(ghost.id, {
+        escalated: true,
+        escalatedAt: new Date().toISOString(),
+        priority: 'Critical',
+        escalationNotes,
+      });
+      setPriority('Critical');
+      setShowEscalation(false);
+    } catch (error) {
+      console.error('Failed to escalate ghost:', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const getPriorityColor = (priority: GhostPriority) => {
+    switch (priority) {
+      case 'Low':
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+      case 'Medium':
+        return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'High':
+        return 'bg-orange-100 text-orange-800 border-orange-300';
+      case 'Critical':
+        return 'bg-red-100 text-red-800 border-red-300';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
@@ -75,9 +113,20 @@ export function GhostDetailModal({ ghost, onClose, onUpdateStatus, onUpdate }: G
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">{ghost.title}</h3>
-                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(ghost.status)}`}>
-                  {ghost.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(ghost.status)}`}>
+                    {ghost.status}
+                  </span>
+                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${getPriorityColor(priority)}`}>
+                    {priority} Priority
+                  </span>
+                  {ghost.escalated && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-red-50 text-red-700 border border-red-200">
+                      <AlertTriangle size={14} />
+                      Escalated
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2 ml-4">
                 <AlertCircle className="text-red-600" size={20} />
@@ -170,9 +219,42 @@ export function GhostDetailModal({ ghost, onClose, onUpdateStatus, onUpdate }: G
           )}
 
           <div className="border-t border-gray-200 pt-6">
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">Management</h4>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-semibold text-gray-900">Leadership Triage</h4>
+              {!ghost.escalated && (
+                <button
+                  onClick={() => setShowEscalation(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+                >
+                  <ArrowUpCircle size={16} />
+                  Escalate
+                </button>
+              )}
+            </div>
 
             <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Priority Level
+                </label>
+                <div className="flex gap-2">
+                  {(['Low', 'Medium', 'High', 'Critical'] as const).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPriority(p)}
+                      disabled={isUpdating}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                        priority === p
+                          ? getPriorityColor(p)
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      } disabled:opacity-50`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Status
@@ -230,6 +312,44 @@ export function GhostDetailModal({ ghost, onClose, onUpdateStatus, onUpdate }: G
               </button>
             </div>
           </div>
+
+          {showEscalation && (
+            <div className="border-t border-gray-200 pt-6">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-start gap-3 mb-4">
+                  <AlertTriangle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
+                  <div>
+                    <h5 className="font-semibold text-red-900 mb-1">Escalate this Ghost</h5>
+                    <p className="text-sm text-red-700">
+                      This will mark the ghost as Critical priority and notify leadership. Add a note explaining why this requires escalation.
+                    </p>
+                  </div>
+                </div>
+                <textarea
+                  value={escalationNotes}
+                  onChange={(e) => setEscalationNotes(e.target.value)}
+                  placeholder="Explain why this needs to be escalated..."
+                  rows={3}
+                  className="w-full px-4 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent mb-3"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleEscalate}
+                    disabled={isUpdating || !escalationNotes.trim()}
+                    className="flex-1 bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                  >
+                    {isUpdating ? 'Escalating...' : 'Confirm Escalation'}
+                  </button>
+                  <button
+                    onClick={() => setShowEscalation(false)}
+                    className="flex-1 bg-white border border-gray-300 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

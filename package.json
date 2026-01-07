@@ -12,7 +12,7 @@
     "package-extension": "bash scripts/package-extension.sh"
   },
   "dependencies": {
-    "firebase": "^10.7.1",
+    "@supabase/supabase-js": "^2.89.0",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

@@ -1,5 +1,7 @@
 export type GhostStatus = 'New' | 'In Progress' | 'Resolved' | 'Archived';
 
+export type GhostPriority = 'Low' | 'Medium' | 'High' | 'Critical';
+
 export type GhostCategory =
   | 'Process Inefficiency'
   | 'Technical Issue'
@@ -7,6 +9,10 @@ export type GhostCategory =
   | 'Data Quality'
   | 'User Experience'
   | 'Compliance Risk'
+  | 'Compliance'
+  | 'System'
+  | 'Process'
+  | 'Policy'
   | 'Other';
 
 export interface Ghost {
@@ -17,6 +23,7 @@ export interface Ghost {
   category: GhostCategory;
   impact: number;
   effort: number;
+  priority: GhostPriority;
   email: string;
   reporterEmail: string;
   reporter: string;
@@ -34,7 +41,13 @@ export interface Ghost {
   screenshot?: string | null;
   resolvedBy?: string;
   resolvedAt?: string;
+  dateResolved?: string;
+  actualResolutionTime?: number;
   pointsAwarded?: number;
+  escalated?: boolean;
+  escalatedAt?: string;
+  escalatedBy?: string;
+  escalationNotes?: string;
 }
 
 export interface GhostFilters {

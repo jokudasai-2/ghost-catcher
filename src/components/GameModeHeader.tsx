@@ -16,7 +16,7 @@ export function GameModeHeader({ user, onExitGameMode, onOpenLeaderboard }: Game
             <Ghost size={32} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Ghost Catcher - Game Mode</h1>
+            <h1 className="text-2xl font-bold">Haunted House - Game Mode</h1>
             <p className="text-blue-100">
               {user ? `Welcome back, ${user.displayName}!` : 'Loading...'}
             </p>

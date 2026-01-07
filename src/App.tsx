@@ -3,7 +3,7 @@ import { Ghost, Search, Filter, TrendingUp, AlertTriangle, CheckCircle, Clock, D
 import { useGhosts } from './hooks/useGhosts';
 import { StatCard } from './components/StatCard';
 import { GhostCard } from './components/GhostCard';
-import { GhostListItem } from './components/GhostListItem';
+import { GhostTable } from './components/GhostTable';
 import { GhostDetailModal } from './components/GhostDetailModal';
 import { ReportGhostModal } from './components/ReportGhostModal';
 import type { Ghost as GhostType, GhostFilters } from './types/ghost';
@@ -24,6 +24,7 @@ function AppContent() {
   const [selectedGhost, setSelectedGhost] = useState<GhostType | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'priority' | 'age' | 'impact' | 'none'>('none');
   const [filters, setFilters] = useState<GhostFilters>({
     status: 'All',
     category: 'All',
@@ -42,7 +43,7 @@ function AppContent() {
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
 
   useEffect(() => {
-    document.title = isGameMode ? 'Ghost Catcher - Game Mode' : 'Ghost Catcher';
+    document.title = isGameMode ? 'Haunted House - Game Mode' : 'Haunted House';
   }, [isGameMode]);
 
   useEffect(() => {
@@ -123,7 +124,7 @@ function AppContent() {
   };
 
   const filteredGhosts = useMemo(() => {
-    return ghosts.filter((ghost) => {
+    let filtered = ghosts.filter((ghost) => {
       if (filters.status !== 'All' && ghost.status !== filters.status) return false;
       if (filters.category !== 'All' && ghost.category !== filters.category) return false;
       if (filters.impactMin > 0 && ghost.impact < filters.impactMin) return false;
@@ -138,7 +139,25 @@ function AppContent() {
       }
       return true;
     });
-  }, [ghosts, filters, searchQuery]);
+
+    if (sortBy !== 'none') {
+      filtered = [...filtered].sort((a, b) => {
+        if (sortBy === 'priority') {
+          const priorityOrder = { 'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3 };
+          const aPriority = priorityOrder[a.priority || 'Medium'];
+          const bPriority = priorityOrder[b.priority || 'Medium'];
+          return aPriority - bPriority;
+        } else if (sortBy === 'age') {
+          return b.daysOpen - a.daysOpen;
+        } else if (sortBy === 'impact') {
+          return b.impact - a.impact;
+        }
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [ghosts, filters, searchQuery, sortBy]);
 
   const stats = useMemo(() => {
     const byStatus = {
@@ -173,17 +192,19 @@ function AppContent() {
         highImpactCount++;
       }
 
-      if (ghost.status === 'Resolved') {
-        totalDaysOpen += ghost.daysOpen;
+      if (ghost.status === 'Resolved' && ghost.actualResolutionTime !== undefined) {
+        totalDaysOpen += ghost.actualResolutionTime;
         resolvedCount++;
 
-        const resolvedDate = ghost.resolvedAt ? new Date(ghost.resolvedAt) : new Date(ghost.timestamp);
+        const resolvedDate = ghost.dateResolved ? new Date(ghost.dateResolved) :
+                            ghost.resolvedAt ? new Date(ghost.resolvedAt) :
+                            new Date(ghost.timestamp);
 
         if (resolvedDate >= currentMonthStart) {
-          currentMonthDaysOpen += ghost.daysOpen;
+          currentMonthDaysOpen += ghost.actualResolutionTime;
           currentMonthResolvedCount++;
         } else if (resolvedDate >= previousMonthStart && resolvedDate <= previousMonthEnd) {
-          previousMonthDaysOpen += ghost.daysOpen;
+          previousMonthDaysOpen += ghost.actualResolutionTime;
           previousMonthResolvedCount++;
         }
       }
@@ -213,7 +234,7 @@ function AppContent() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading Ghost Catcher...</p>
+          <p className="text-gray-600 font-medium">Loading Haunted House...</p>
         </div>
       </div>
     );
@@ -341,7 +362,7 @@ function AppContent() {
                   </span>
                 </button>
                 <div>
-                  <h1 className="text-4xl font-bold text-gray-900">Ghost Catcher</h1>
+                  <h1 className="text-4xl font-bold text-gray-900">Haunted House</h1>
                   <p className="text-gray-600">Operational Intelligence Dashboard</p>
                 </div>
               </div>
@@ -395,13 +416,13 @@ function AppContent() {
             color="yellow"
           />
           <StatCard
-            title={isGameMode ? "Captured Ghosts" : "Resolved"}
+            title={isGameMode ? "Busted Ghosts" : "Resolved"}
             value={stats.byStatus.Resolved}
             icon={CheckCircle}
             color="green"
           />
           <StatCard
-            title={isGameMode ? "Avg Capture Time" : "Avg Resolution Time"}
+            title={isGameMode ? "Avg. Bust Time" : "Avg Resolution Time"}
             value={stats.averageResolutionTime > 0 ? `${stats.averageResolutionTime}d` : '—'}
             icon={TrendingUp}
             color="orange"
@@ -422,8 +443,8 @@ function AppContent() {
             ? 'glass-panel border border-cyan-500/30'
             : 'bg-white border border-gray-200'
         }`}>
-          <div className="flex flex-col lg:flex-row gap-3">
-            <div className="flex-1">
+          <div className="flex flex-col gap-3">
+            <div className="w-full">
               <div className="relative">
                 <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
                   isGameMode ? 'text-cyan-400' : 'text-gray-400'
@@ -441,11 +462,11 @@ function AppContent() {
                 />
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <select
                 value={filters.status}
                 onChange={(e) => setFilters({ ...filters, status: e.target.value as any })}
-                className={`px-3 py-2 text-sm rounded-lg focus:ring-2 ${
+                className={`flex-1 min-w-[100px] px-3 py-2 text-sm rounded-lg focus:ring-2 ${
                   isGameMode
                     ? 'bg-slate-800/50 border border-cyan-500/30 text-cyan-300 focus:ring-cyan-500 focus:border-cyan-500 font-mono'
                     : 'border border-gray-300 bg-white focus:ring-blue-500 focus:border-transparent'
@@ -460,7 +481,7 @@ function AppContent() {
               <select
                 value={filters.category}
                 onChange={(e) => setFilters({ ...filters, category: e.target.value as any })}
-                className={`px-3 py-2 text-sm rounded-lg focus:ring-2 ${
+                className={`flex-1 min-w-[120px] px-3 py-2 text-sm rounded-lg focus:ring-2 ${
                   isGameMode
                     ? 'bg-slate-800/50 border border-cyan-500/30 text-cyan-300 focus:ring-cyan-500 focus:border-cyan-500 font-mono'
                     : 'border border-gray-300 bg-white focus:ring-blue-500 focus:border-transparent'
@@ -478,7 +499,7 @@ function AppContent() {
               <select
                 value={filters.impactMin}
                 onChange={(e) => setFilters({ ...filters, impactMin: Number(e.target.value) })}
-                className={`px-3 py-2 text-sm rounded-lg focus:ring-2 ${
+                className={`flex-1 min-w-[100px] px-3 py-2 text-sm rounded-lg focus:ring-2 ${
                   isGameMode
                     ? 'bg-slate-800/50 border border-cyan-500/30 text-cyan-300 focus:ring-cyan-500 focus:border-cyan-500 font-mono'
                     : 'border border-gray-300 bg-white focus:ring-blue-500 focus:border-transparent'
@@ -489,7 +510,19 @@ function AppContent() {
                 <option value="4">4+</option>
                 <option value="5">5</option>
               </select>
-              <div className={`flex items-center gap-1 rounded-lg p-1 ${
+              {!isGameMode && (
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="flex-1 min-w-[100px] px-3 py-2 text-sm rounded-lg focus:ring-2 border border-gray-300 bg-white focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="none">Sort By</option>
+                  <option value="priority">Priority</option>
+                  <option value="age">Age</option>
+                  <option value="impact">Impact</option>
+                </select>
+              )}
+              <div className={`flex items-center gap-1 rounded-lg p-1 flex-shrink-0 ${
                 isGameMode ? 'bg-slate-800/50' : 'bg-gray-100'
               }`}>
                 <button
@@ -558,21 +591,17 @@ function AppContent() {
                 onClick={() => setSelectedGhost(ghost)}
                 isGameMode={isGameMode}
                 previousStatus={previousGhostStatuses.current.get(ghost.id)}
+                onQuickStatusChange={(status) => updateGhostStatus(ghost.id, status)}
               />
             ))}
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
-            {filteredGhosts.map((ghost) => (
-              <GhostListItem
-                key={ghost.id}
-                ghost={ghost}
-                onClick={() => setSelectedGhost(ghost)}
-                isGameMode={isGameMode}
-                previousStatus={previousGhostStatuses.current.get(ghost.id)}
-              />
-            ))}
-          </div>
+          <GhostTable
+            ghosts={filteredGhosts}
+            onClick={(ghost) => setSelectedGhost(ghost)}
+            isGameMode={isGameMode}
+            previousStatuses={previousGhostStatuses.current}
+          />
         )}
 
         {stats.byCategory && Object.keys(stats.byCategory).length > 0 && (

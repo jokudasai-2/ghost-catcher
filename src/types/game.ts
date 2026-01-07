@@ -1,6 +1,9 @@
 export interface User {
   userId: string;
   displayName: string;
+  firstName: string;
+  lastName: string;
+  email: string;
   totalPoints: number;
   level: number;
   badges: Badge[];

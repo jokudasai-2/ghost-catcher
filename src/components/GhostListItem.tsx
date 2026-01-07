@@ -1,5 +1,5 @@
-import { Calendar, User, AlertCircle, ExternalLink, Zap } from 'lucide-react';
-import type { Ghost } from '../types/ghost';
+import { Calendar, User, AlertCircle, ExternalLink, Zap, Flag, AlertTriangle } from 'lucide-react';
+import type { Ghost, GhostPriority } from '../types/ghost';
 import { calculatePoints } from '../utils/points';
 import { useState, useEffect } from 'react';
 
@@ -47,52 +47,82 @@ export function GhostListItem({ ghost, onClick, isGameMode = false, previousStat
     return 'text-yellow-600';
   };
 
+  const getPriorityColor = (priority?: GhostPriority) => {
+    if (!priority) return 'bg-gray-100 text-gray-700';
+    switch (priority) {
+      case 'Low':
+        return 'bg-gray-100 text-gray-700';
+      case 'Medium':
+        return 'bg-blue-100 text-blue-700';
+      case 'High':
+        return 'bg-orange-100 text-orange-700';
+      case 'Critical':
+        return 'bg-red-100 text-red-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
+  };
+
   const potentialPoints = isGameMode && ghost.status !== 'Resolved' ? calculatePoints(ghost).totalPoints : null;
 
   return (
     <div
       onClick={onClick}
-      className={`bg-white rounded-lg shadow-sm border border-gray-200 p-3 hover:shadow-md transition-all cursor-pointer hover:border-blue-300 ${animationClass}`}
+      className={`bg-white rounded-lg shadow-sm border border-gray-200 p-2.5 sm:p-3 hover:shadow-md transition-all cursor-pointer hover:border-blue-300 ${animationClass}`}
     >
-      <div className="flex items-center gap-4">
-        <div className="flex-shrink-0">
-          <span className="font-mono text-xs font-semibold text-gray-500">{ghost.id}</span>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+          <div className="flex-shrink-0">
+            <span className="font-mono text-xs font-semibold text-gray-500">{ghost.id}</span>
+          </div>
 
-        <div className="flex-shrink-0">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ghost.status)}`}>
-            {ghost.status}
-          </span>
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getStatusColor(ghost.status)}`}>
+              {ghost.status}
+            </span>
+            {!isGameMode && ghost.priority && (
+              <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getPriorityColor(ghost.priority)}`}>
+                <Flag size={10} className="inline mr-1" />
+                {ghost.priority}
+              </span>
+            )}
+            {ghost.escalated && (
+              <span className={`inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
+                isGameMode
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/50 font-mono'
+                  : 'bg-red-50 text-red-700 border border-red-200'
+              }`}>
+                <AlertTriangle size={10} />
+                {isGameMode ? 'ESCALATED' : 'Escalated'}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex-1 min-w-0">
-          <h3 className="text-base font-semibold text-gray-900 truncate">{ghost.title}</h3>
-          <p className="text-sm text-gray-600 truncate">{ghost.description}</p>
+          <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">{ghost.title}</h3>
+          <p className="text-xs sm:text-sm text-gray-600 truncate">{ghost.description}</p>
         </div>
 
-        <div className="flex items-center gap-4 flex-shrink-0">
-          <div className="flex items-center gap-1 text-xs text-gray-500">
+        <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 flex-wrap text-xs">
+          <div className="flex items-center gap-1 text-gray-500">
             <User size={12} />
-            <span>{ghost.reporter}</span>
+            <span className="hidden sm:inline">{ghost.reporter}</span>
           </div>
 
-          <div className="flex items-center gap-1 text-xs text-gray-500">
+          <div className="flex items-center gap-1 text-gray-500">
             <Calendar size={12} />
             <span>{ghost.daysOpen}d</span>
           </div>
 
-          <div className="flex items-center gap-1 text-xs">
-            <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700">{ghost.category}</span>
-          </div>
-
           <div className={`flex items-center gap-1 ${getImpactColor(ghost.impact)}`}>
-            <AlertCircle size={16} />
+            <AlertCircle size={14} />
             <span className="text-sm font-semibold">{ghost.impact}</span>
           </div>
 
           {potentialPoints && (
-            <div className="flex items-center gap-1 text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">
-              <Zap size={14} />
+            <div className="flex items-center gap-1 text-yellow-600 bg-yellow-50 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
+              <Zap size={12} />
               <span className="text-xs font-bold">+{potentialPoints}</span>
             </div>
           )}
@@ -106,7 +136,7 @@ export function GhostListItem({ ghost, onClick, isGameMode = false, previousStat
               className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
               title={ghost.pageTitle || ghost.url}
             >
-              <ExternalLink size={16} />
+              <ExternalLink size={14} />
             </a>
           )}
         </div>

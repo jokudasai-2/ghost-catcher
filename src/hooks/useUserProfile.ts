@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { collection, doc, setDoc, updateDoc, onSnapshot, query, where, orderBy, getDocs } from 'firebase/firestore';
-import { db } from '../firebase-config';
+import { supabase } from '../lib/supabase';
 import type { User, Activity, Badge } from '../types/game';
 import { ACHIEVEMENTS, calculateLevel } from '../constants/achievements';
 
@@ -17,16 +16,47 @@ export function useUserProfile(userId: string | null) {
       return;
     }
 
-    const userRef = doc(db, 'users', userId);
+    const fetchUser = async () => {
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-    const unsubscribe = onSnapshot(userRef, async (docSnapshot) => {
-      if (docSnapshot.exists()) {
-        const userData = docSnapshot.data() as User;
-        setUser(userData);
+      if (error) {
+        console.error('Error fetching user:', error);
+        setLoading(false);
+        return;
+      }
+
+      if (userData) {
+        setUser({
+          userId: userData.user_id,
+          displayName: userData.display_name,
+          firstName: userData.first_name,
+          lastName: userData.last_name,
+          email: userData.email,
+          totalPoints: userData.total_points,
+          level: userData.level,
+          badges: userData.badges || [],
+          stats: userData.stats || {
+            ghostsResolved: 0,
+            averageResolutionTime: 0,
+            streak: 0,
+            weeklyPoints: 0,
+            weeklyGhostsResolved: 0,
+          },
+          createdAt: userData.created_at,
+          lastActivityDate: userData.last_activity_date,
+        });
       } else {
+        const displayName = userId.split('@')[0];
         const newUser: User = {
           userId,
-          displayName: userId.split('@')[0],
+          displayName,
+          firstName: '',
+          lastName: '',
+          email: '',
           totalPoints: 0,
           level: 1,
           badges: [],
@@ -40,47 +70,116 @@ export function useUserProfile(userId: string | null) {
           createdAt: new Date().toISOString(),
           lastActivityDate: new Date().toISOString(),
         };
-        await setDoc(userRef, newUser);
+
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert([{
+            user_id: userId,
+            display_name: displayName,
+            first_name: '',
+            last_name: '',
+            email: '',
+            total_points: 0,
+            level: 1,
+            badges: [],
+            stats: newUser.stats,
+            created_at: newUser.createdAt,
+            last_activity_date: newUser.lastActivityDate,
+          }]);
+
+        if (insertError) {
+          console.error('Error creating user:', insertError);
+        }
         setUser(newUser);
       }
       setLoading(false);
-    });
+    };
 
-    const activitiesQuery = query(
-      collection(db, 'activities'),
-      where('userId', '==', userId),
-      orderBy('timestamp', 'desc')
-    );
+    fetchUser();
 
-    const unsubscribeActivities = onSnapshot(activitiesQuery, (snapshot) => {
-      const activitiesData: Activity[] = [];
-      snapshot.forEach((doc) => {
-        activitiesData.push({ id: doc.id, ...doc.data() } as Activity);
-      });
-      setActivities(activitiesData);
-    });
+    const userChannel = supabase
+      .channel(`user-${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users', filter: `user_id=eq.${userId}` }, () => {
+        fetchUser();
+      })
+      .subscribe();
+
+    const fetchActivities = async () => {
+      const { data: activitiesData, error } = await supabase
+        .from('activities')
+        .select('*')
+        .eq('user_id', userId)
+        .order('timestamp', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching activities:', error);
+        return;
+      }
+
+      setActivities((activitiesData || []).map((activity: any) => ({
+        id: activity.id,
+        userId: activity.user_id,
+        ghostId: activity.ghost_id,
+        activityType: activity.activity_type,
+        pointsEarned: activity.points_earned,
+        timestamp: activity.timestamp,
+        metadata: activity.metadata || {},
+      })));
+    };
+
+    fetchActivities();
+
+    const activitiesChannel = supabase
+      .channel(`activities-${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities', filter: `user_id=eq.${userId}` }, () => {
+        fetchActivities();
+      })
+      .subscribe();
 
     return () => {
-      unsubscribe();
-      unsubscribeActivities();
+      supabase.removeChannel(userChannel);
+      supabase.removeChannel(activitiesChannel);
     };
   }, [userId]);
 
   const awardPoints = async (pointsEarned: number, activityData: Omit<Activity, 'id'>) => {
     if (!userId || !user) return;
 
-    const userRef = doc(db, 'users', userId);
     const newTotalPoints = user.totalPoints + pointsEarned;
     const newLevel = calculateLevel(newTotalPoints);
 
-    await updateDoc(userRef, {
-      totalPoints: newTotalPoints,
-      level: newLevel,
-      'stats.ghostsResolved': user.stats.ghostsResolved + 1,
-      lastActivityDate: new Date().toISOString(),
-    });
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        total_points: newTotalPoints,
+        level: newLevel,
+        stats: {
+          ...user.stats,
+          ghostsResolved: user.stats.ghostsResolved + 1,
+        },
+        last_activity_date: new Date().toISOString(),
+      })
+      .eq('user_id', userId);
 
-    await setDoc(doc(collection(db, 'activities')), activityData);
+    if (updateError) {
+      console.error('Error updating user points:', updateError);
+      return;
+    }
+
+    const { error: activityError } = await supabase
+      .from('activities')
+      .insert([{
+        user_id: activityData.userId,
+        ghost_id: activityData.ghostId,
+        activity_type: activityData.activityType,
+        points_earned: activityData.pointsEarned,
+        timestamp: activityData.timestamp,
+        metadata: activityData.metadata || {},
+      }]);
+
+    if (activityError) {
+      console.error('Error adding activity:', activityError);
+    }
 
     await checkAndAwardAchievements();
   };
@@ -88,19 +187,31 @@ export function useUserProfile(userId: string | null) {
   const checkAndAwardAchievements = async () => {
     if (!userId || !user) return;
 
-    const userActivities = await getDocs(
-      query(collection(db, 'activities'), where('userId', '==', userId))
-    );
-    const activitiesData: Activity[] = [];
-    userActivities.forEach((doc) => {
-      activitiesData.push({ id: doc.id, ...doc.data() } as Activity);
-    });
+    const { data: activitiesData, error } = await supabase
+      .from('activities')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error fetching activities for achievements:', error);
+      return;
+    }
+
+    const activitiesList: Activity[] = (activitiesData || []).map((activity: any) => ({
+      id: activity.id,
+      userId: activity.user_id,
+      ghostId: activity.ghost_id,
+      activityType: activity.activity_type,
+      pointsEarned: activity.points_earned,
+      timestamp: activity.timestamp,
+      metadata: activity.metadata || {},
+    }));
 
     const unlockedBadgeIds = user.badges.map(b => b.id);
     const newBadges: Badge[] = [];
 
     for (const achievement of ACHIEVEMENTS) {
-      if (!unlockedBadgeIds.includes(achievement.id) && achievement.condition(user, activitiesData)) {
+      if (!unlockedBadgeIds.includes(achievement.id) && achievement.condition(user, activitiesList)) {
         const newBadge: Badge = {
           id: achievement.id,
           name: achievement.name,
@@ -111,19 +222,29 @@ export function useUserProfile(userId: string | null) {
         };
         newBadges.push(newBadge);
 
-        await updateDoc(doc(db, 'users', userId), {
-          badges: [...user.badges, newBadge],
-          totalPoints: user.totalPoints + achievement.bonusPoints,
-        });
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({
+            badges: [...user.badges, newBadge],
+            total_points: user.totalPoints + achievement.bonusPoints,
+          })
+          .eq('user_id', userId);
 
-        await setDoc(doc(collection(db, 'activities')), {
-          userId,
-          ghostId: 'achievement',
-          activityType: 'achievementUnlock',
-          pointsEarned: achievement.bonusPoints,
-          timestamp: new Date().toISOString(),
-          metadata: { achievementId: achievement.id },
-        });
+        if (updateError) {
+          console.error('Error updating user badges:', updateError);
+          continue;
+        }
+
+        await supabase
+          .from('activities')
+          .insert([{
+            user_id: userId,
+            ghost_id: 'achievement',
+            activity_type: 'achievementUnlock',
+            points_earned: achievement.bonusPoints,
+            timestamp: new Date().toISOString(),
+            metadata: { achievementId: achievement.id },
+          }]);
       }
     }
 
@@ -138,18 +259,53 @@ export function useLeaderboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, 'users'), orderBy('totalPoints', 'desc'));
+    const fetchLeaderboard = async () => {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('total_points', { ascending: false })
+        .limit(10);
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const users: User[] = [];
-      snapshot.forEach((doc) => {
-        users.push(doc.data() as User);
-      });
-      setLeaderboard(users.slice(0, 10));
+      if (error) {
+        console.error('Error fetching leaderboard:', error);
+        setLoading(false);
+        return;
+      }
+
+      setLeaderboard((data || []).map((user: any) => ({
+        userId: user.user_id,
+        displayName: user.display_name,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        email: user.email,
+        totalPoints: user.total_points,
+        level: user.level,
+        badges: user.badges || [],
+        stats: user.stats || {
+          ghostsResolved: 0,
+          averageResolutionTime: 0,
+          streak: 0,
+          weeklyPoints: 0,
+          weeklyGhostsResolved: 0,
+        },
+        createdAt: user.created_at,
+        lastActivityDate: user.last_activity_date,
+      })));
       setLoading(false);
-    });
+    };
 
-    return unsubscribe;
+    fetchLeaderboard();
+
+    const channel = supabase
+      .channel('leaderboard-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
+        fetchLeaderboard();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return { leaderboard, loading };

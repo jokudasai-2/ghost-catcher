@@ -38,18 +38,18 @@ export function StatCard({ title, value, icon: Icon, trend, color = 'blue' }: St
   };
 
   return (
-    <div className={`rounded-lg px-3 py-2 transition-all ${
+    <div className={`rounded-lg px-2 sm:px-3 py-2 transition-all ${
       isGameMode
         ? `glass-panel border border-cyan-500/30 hover:border-cyan-500/50 ${getBorderColor()}`
         : 'bg-white border border-gray-200 hover:border-gray-300'
     }`}>
-      <div className="flex items-center gap-2">
-        <Icon size={16} className={colorClasses[color as keyof typeof colorClasses] || colorClasses.blue} />
+      <div className="flex items-center gap-1.5 sm:gap-2">
+        <Icon size={14} className={`sm:w-4 sm:h-4 flex-shrink-0 ${colorClasses[color as keyof typeof colorClasses] || colorClasses.blue}`} />
         <div className="flex-1 min-w-0">
           <p className={`text-xs truncate ${
             isGameMode ? 'text-cyan-400/70 font-mono' : 'text-gray-500'
           }`}>{title}</p>
-          <p className={`text-lg font-semibold ${
+          <p className={`text-base sm:text-lg font-semibold ${
             isGameMode ? 'text-cyan-300 glow-text-cyan' : 'text-gray-900'
           }`}>{value}</p>
         </div>

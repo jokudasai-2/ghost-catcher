@@ -153,6 +153,8 @@ export function ReportGhostModal({ onClose, onSubmit }: ReportGhostModalProps) {
       const randomSuffix = Math.random().toString(36).substring(2, 8);
       const id = `GH-${timestamp.slice(-6)}${randomSuffix}`;
 
+      const priority = impact >= 4 ? 'High' : impact >= 3 ? 'Medium' : 'Low';
+
       const ghostData: Omit<GhostType, 'daysOpen' | 'firestoreId'> = {
         id,
         title: title.trim(),
@@ -160,6 +162,7 @@ export function ReportGhostModal({ onClose, onSubmit }: ReportGhostModalProps) {
         category,
         impact,
         effort,
+        priority: priority as any,
         email: email.trim(),
         reporterEmail: email.trim(),
         reporter: reporter.trim() || email.split('@')[0],
@@ -167,7 +170,7 @@ export function ReportGhostModal({ onClose, onSubmit }: ReportGhostModalProps) {
         geography: geography || 'Global',
         riskType: selectedRisks,
         url: url.trim() || window.location.href,
-        pageTitle: document.title || 'Ghost Catcher Dashboard',
+        pageTitle: document.title || 'Haunted House Dashboard',
         timestamp,
         dateReported: new Date().toISOString().split('T')[0],
         status: 'New',

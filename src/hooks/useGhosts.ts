@@ -17,7 +17,7 @@ export function useGhosts() {
 
         if (fetchError) throw fetchError;
 
-        const ghostsData: Ghost[] = (data || []).map((ghost: any) => {
+        const ghostsData: Ghost[] = (data || []).map((ghost) => {
           const dateReported = new Date(ghost.date_reported || ghost.timestamp);
           const today = new Date();
           const daysOpen = Math.floor((today.getTime() - dateReported.getTime()) / (1000 * 60 * 60 * 24));
@@ -29,7 +29,7 @@ export function useGhosts() {
           }
 
           return {
-            id: ghost.id,
+            id: ghost.ghost_id,
             title: ghost.title,
             description: ghost.description,
             category: ghost.category,
@@ -60,6 +60,7 @@ export function useGhosts() {
             escalatedAt: ghost.escalated_at,
             escalatedBy: ghost.escalated_by,
             escalationNotes: ghost.escalation_notes,
+            firestoreId: ghost.id,
           };
         });
 
@@ -101,12 +102,12 @@ export function useGhosts() {
         }
       }
 
-      const { error: updateError } = await supabase
+      const { error } = await supabase
         .from('ghosts')
         .update(updates)
-        .eq('id', ghostId);
+        .eq('ghost_id', ghostId);
 
-      if (updateError) throw updateError;
+      if (error) throw error;
     } catch (err) {
       console.error('Error updating ghost status:', err);
       throw err;
@@ -138,12 +139,12 @@ export function useGhosts() {
       if (updates.escalatedBy !== undefined) dbUpdates.escalated_by = updates.escalatedBy;
       if (updates.escalationNotes !== undefined) dbUpdates.escalation_notes = updates.escalationNotes;
 
-      const { error: updateError } = await supabase
+      const { error } = await supabase
         .from('ghosts')
         .update(dbUpdates)
-        .eq('id', ghostId);
+        .eq('ghost_id', ghostId);
 
-      if (updateError) throw updateError;
+      if (error) throw error;
     } catch (err) {
       console.error('Error updating ghost:', err);
       throw err;
@@ -152,8 +153,8 @@ export function useGhosts() {
 
   const addGhost = async (ghostData: Omit<Ghost, 'daysOpen' | 'firestoreId'>) => {
     try {
-      const dbGhost = {
-        id: ghostData.id,
+      const { error } = await supabase.from('ghosts').insert({
+        ghost_id: ghostData.id,
         title: ghostData.title,
         description: ghostData.description,
         category: ghostData.category,
@@ -174,13 +175,9 @@ export function useGhosts() {
         assigned_to: ghostData.assignedTo,
         resolution_notes: ghostData.resolutionNotes,
         screenshot: ghostData.screenshot,
-      };
+      });
 
-      const { error: insertError } = await supabase
-        .from('ghosts')
-        .insert([dbGhost]);
-
-      if (insertError) throw insertError;
+      if (error) throw error;
     } catch (err) {
       console.error('Error adding ghost:', err);
       throw err;

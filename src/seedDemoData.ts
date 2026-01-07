@@ -21,10 +21,10 @@ export async function seedDemoData() {
       const daysAgo = ghost.daysOpen || 10;
       const reportDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
       const timestamp = reportDate.toISOString();
-      const dateReported = reportDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      const dateReported = reportDate.toISOString();
 
       const ghostData: any = {
-        id: ghost.id,
+        ghost_id: ghost.id,
         title: ghost.title,
         description: ghost.description,
         category: ghost.category as GhostCategory,
@@ -44,7 +44,6 @@ export async function seedDemoData() {
         status: ghost.status as GhostStatus,
         assigned_to: ghost.assignedTo,
         resolution_notes: ghost.resolutionNotes,
-        days_open: ghost.daysOpen,
         screenshot: null
       };
 
@@ -57,15 +56,13 @@ export async function seedDemoData() {
         ghostData.resolved_by = ghost.assignedTo;
       }
 
-      const { error } = await supabase
-        .from('ghosts')
-        .insert([ghostData]);
-
-      if (error) {
-        console.error(`Error adding ghost ${ghost.id}:`, error);
-      } else {
+      try {
+        const { error } = await supabase.from('ghosts').insert(ghostData);
+        if (error) throw error;
         count++;
         console.log(`Added ghost ${count}/${deelGhostsData.length}: ${ghost.title}`);
+      } catch (error) {
+        console.error(`Error adding ghost ${ghost.id}:`, error);
       }
     }
 

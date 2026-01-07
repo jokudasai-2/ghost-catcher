@@ -16,8 +16,12 @@ import { UserSetupModal } from './components/UserSetupModal';
 import { AchievementUnlockModal } from './components/AchievementUnlockModal';
 import { calculatePoints } from './utils/points';
 import type { Badge } from './types/game';
+import { useAuth } from './contexts/AuthContext';
+import { AuthModal } from './components/AuthModal';
 
 function AppContent() {
+  const { user: authUser, loading: authLoading } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const { ghosts, loading, error, updateGhostStatus, updateGhost, addGhost } = useGhosts();
   const { isGameMode, toggleGameMode, currentUserId, setCurrentUserId } = useGameMode();
   const { user, awardPoints, checkAndAwardAchievements } = useUserProfile(currentUserId);
@@ -229,7 +233,7 @@ function AppContent() {
     };
   }, [ghosts]);
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 flex items-center justify-center">
         <div className="text-center">
@@ -237,6 +241,33 @@ function AppContent() {
           <p className="text-gray-600 font-medium">Loading Haunted House...</p>
         </div>
       </div>
+    );
+  }
+
+  if (!authUser) {
+    return (
+      <>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 flex items-center justify-center p-4">
+          <div className="max-w-md w-full text-center">
+            <div className="bg-white rounded-2xl shadow-xl p-8">
+              <Ghost className="text-blue-600 mx-auto mb-4" size={64} />
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Haunted House</h1>
+              <p className="text-gray-600 mb-6">Sign in to access the Ghost Tracking System</p>
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium"
+              >
+                Sign In / Sign Up
+              </button>
+            </div>
+          </div>
+        </div>
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          initialMode="signin"
+        />
+      </>
     );
   }
 
@@ -279,17 +310,17 @@ function AppContent() {
       )}
 
       {showNotification && newGhostId && (
-        <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-2xl animate-slide-in-right flex items-center gap-3 ${
+        <div className={`fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-50 px-4 sm:px-6 py-3 sm:py-4 rounded-lg shadow-2xl animate-slide-in-right flex items-center gap-2 sm:gap-3 ${
           isGameMode
             ? 'glass-panel border-cyan-500/50 text-cyan-300'
             : 'bg-blue-600 text-white'
         }`}>
-          <Ghost size={24} className={isGameMode ? 'text-cyan-400' : ''} />
-          <div>
-            <div className={`font-semibold ${isGameMode ? 'font-mono' : ''}`}>
+          <Ghost size={20} className={`sm:w-6 sm:h-6 flex-shrink-0 ${isGameMode ? 'text-cyan-400' : ''}`} />
+          <div className="flex-1 min-w-0">
+            <div className={`text-sm sm:text-base font-semibold truncate ${isGameMode ? 'font-mono' : ''}`}>
               {isGameMode ? 'NEW TARGET DETECTED!' : 'New Ghost Reported!'}
             </div>
-            <div className={`text-sm ${isGameMode ? 'opacity-70 font-mono' : 'opacity-90'}`}>{newGhostId}</div>
+            <div className={`text-xs sm:text-sm truncate ${isGameMode ? 'opacity-70 font-mono' : 'opacity-90'}`}>{newGhostId}</div>
           </div>
         </div>
       )}
@@ -304,40 +335,40 @@ function AppContent() {
         />
       )}
 
-      <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 lg:py-8 relative z-10">
         {isGameMode ? (
-          <div className="mb-6">
-            <div className="glass-panel rounded-lg p-4 border border-cyan-500/30">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+          <div className="mb-4 sm:mb-6">
+            <div className="glass-panel rounded-lg p-3 sm:p-4 border border-cyan-500/30">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
                   <button
                     onClick={handleGameModeToggle}
-                    className="relative hover:scale-110 transition-transform cursor-pointer group"
+                    className="relative hover:scale-110 transition-transform cursor-pointer group flex-shrink-0"
                     title="Exit Game Mode"
                   >
-                    <div className="bg-cyan-500/20 p-3 rounded-lg border border-cyan-500/50 animate-pulse-glow-cyan group-hover:border-cyan-400">
-                      <Ghost className="text-cyan-400 group-hover:text-cyan-300" size={36} />
+                    <div className="bg-cyan-500/20 p-2 sm:p-3 rounded-lg border border-cyan-500/50 animate-pulse-glow-cyan group-hover:border-cyan-400">
+                      <Ghost className="text-cyan-400 group-hover:text-cyan-300" size={28} />
                     </div>
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900 animate-pulse" />
+                    <div className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-gray-900 animate-pulse" />
                   </button>
-                  <div>
-                    <h1 className="text-3xl font-bold font-mono text-cyan-400 glow-text-cyan">
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold font-mono text-cyan-400 glow-text-cyan truncate">
                       GHOSTBUSTER HQ
                     </h1>
-                    <p className="text-cyan-300/70 text-sm font-mono">
+                    <p className="text-cyan-300/70 text-xs sm:text-sm font-mono truncate">
                       {user ? `OPERATIVE: ${user.displayName.toUpperCase()}` : 'SYSTEM ONLINE'}
                     </p>
                   </div>
                 </div>
                 {user && (
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                     <div className="text-right">
                       <div className="text-xs text-cyan-400/70 font-mono">XP</div>
-                      <div className="text-2xl font-bold text-cyan-400 glow-text-cyan">{user.totalPoints}</div>
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-cyan-400 glow-text-cyan">{user.totalPoints}</div>
                     </div>
                     <div className="text-right">
                       <div className="text-xs text-cyan-400/70 font-mono">LVL</div>
-                      <div className="text-2xl font-bold text-cyan-400 glow-text-cyan">{user.level}</div>
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-cyan-400 glow-text-cyan">{user.level}</div>
                     </div>
                   </div>
                 )}
@@ -345,50 +376,50 @@ function AppContent() {
             </div>
           </div>
         ) : (
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
+          <div className="mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-2">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <button
                   onClick={handleGameModeToggle}
-                  className="hover:scale-110 transition-transform cursor-pointer group relative"
+                  className="hover:scale-110 transition-transform cursor-pointer group relative flex-shrink-0"
                   title="Click to enter Game Mode"
                 >
                   <Ghost
                     className={`text-blue-600 ${isGameMode ? 'animate-pulse-glow' : ''}`}
-                    size={40}
+                    size={32}
                   />
-                  <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                  <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none hidden sm:block">
                     Enter Game Mode
                   </span>
                 </button>
                 <div>
-                  <h1 className="text-4xl font-bold text-gray-900">Haunted House</h1>
-                  <p className="text-gray-600">Operational Intelligence Dashboard</p>
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">Haunted House</h1>
+                  <p className="text-sm sm:text-base text-gray-600">Operational Intelligence Dashboard</p>
                 </div>
               </div>
               {ghosts.length === 0 && (
                 <button
                   onClick={handleSeedData}
                   disabled={isSeeding}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto justify-center"
                 >
-                  <Database size={20} />
-                  {isSeeding ? 'Adding Demo Data...' : 'Add Demo Data'}
+                  <Database size={18} />
+                  <span className="sm:inline">{isSeeding ? 'Adding...' : 'Add Demo Data'}</span>
                 </button>
               )}
             </div>
-            <div className="mt-4 flex items-center gap-4 text-sm">
+            <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   <span className="text-gray-600">Live</span>
                 </div>
-                <span className="text-gray-400">•</span>
-                <span className="text-gray-600">Real-time sync enabled</span>
+                <span className="text-gray-400 hidden sm:inline">•</span>
+                <span className="text-gray-600 hidden sm:inline">Real-time sync enabled</span>
               </div>
               {seedMessage && (
                 <>
-                  <span className="text-gray-400">•</span>
+                  <span className="text-gray-400 hidden sm:inline">•</span>
                   <span className="text-green-600 font-medium">{seedMessage}</span>
                 </>
               )}
@@ -396,7 +427,7 @@ function AppContent() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
           <StatCard
             title={isGameMode ? "Total Spirits" : "Total"}
             value={stats.total}
@@ -438,12 +469,12 @@ function AppContent() {
           />
         </div>
 
-        <div className={`rounded-lg shadow-sm p-4 mb-6 ${
+        <div className={`rounded-lg shadow-sm p-3 sm:p-4 mb-4 sm:mb-6 ${
           isGameMode
             ? 'glass-panel border border-cyan-500/30'
             : 'bg-white border border-gray-200'
         }`}>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:gap-3">
             <div className="w-full">
               <div className="relative">
                 <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
@@ -466,7 +497,7 @@ function AppContent() {
               <select
                 value={filters.status}
                 onChange={(e) => setFilters({ ...filters, status: e.target.value as any })}
-                className={`flex-1 min-w-[100px] px-3 py-2 text-sm rounded-lg focus:ring-2 ${
+                className={`flex-1 min-w-[90px] px-2 sm:px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 ${
                   isGameMode
                     ? 'bg-slate-800/50 border border-cyan-500/30 text-cyan-300 focus:ring-cyan-500 focus:border-cyan-500 font-mono'
                     : 'border border-gray-300 bg-white focus:ring-blue-500 focus:border-transparent'
@@ -481,7 +512,7 @@ function AppContent() {
               <select
                 value={filters.category}
                 onChange={(e) => setFilters({ ...filters, category: e.target.value as any })}
-                className={`flex-1 min-w-[120px] px-3 py-2 text-sm rounded-lg focus:ring-2 ${
+                className={`flex-1 min-w-[110px] px-2 sm:px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 ${
                   isGameMode
                     ? 'bg-slate-800/50 border border-cyan-500/30 text-cyan-300 focus:ring-cyan-500 focus:border-cyan-500 font-mono'
                     : 'border border-gray-300 bg-white focus:ring-blue-500 focus:border-transparent'
@@ -499,7 +530,7 @@ function AppContent() {
               <select
                 value={filters.impactMin}
                 onChange={(e) => setFilters({ ...filters, impactMin: Number(e.target.value) })}
-                className={`flex-1 min-w-[100px] px-3 py-2 text-sm rounded-lg focus:ring-2 ${
+                className={`flex-1 min-w-[90px] px-2 sm:px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 ${
                   isGameMode
                     ? 'bg-slate-800/50 border border-cyan-500/30 text-cyan-300 focus:ring-cyan-500 focus:border-cyan-500 font-mono'
                     : 'border border-gray-300 bg-white focus:ring-blue-500 focus:border-transparent'
@@ -514,7 +545,7 @@ function AppContent() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="flex-1 min-w-[100px] px-3 py-2 text-sm rounded-lg focus:ring-2 border border-gray-300 bg-white focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 min-w-[90px] px-2 sm:px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 border border-gray-300 bg-white focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="none">Sort By</option>
                   <option value="priority">Priority</option>
@@ -583,7 +614,7 @@ function AppContent() {
             </p>
           </div>
         ) : viewMode === 'card' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {filteredGhosts.map((ghost) => (
               <GhostCard
                 key={ghost.id}
@@ -605,20 +636,20 @@ function AppContent() {
         )}
 
         {stats.byCategory && Object.keys(stats.byCategory).length > 0 && (
-          <div className={`mt-8 rounded-xl shadow-sm p-6 ${
+          <div className={`mt-6 sm:mt-8 rounded-xl shadow-sm p-4 sm:p-6 ${
             isGameMode
               ? 'glass-panel border border-cyan-500/30'
               : 'bg-white border border-gray-200'
           }`}>
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className={isGameMode ? 'text-cyan-400' : 'text-blue-600'} size={24} />
-              <h2 className={`text-xl font-bold ${
+            <div className="flex items-center gap-2 mb-3 sm:mb-4">
+              <TrendingUp className={isGameMode ? 'text-cyan-400' : 'text-blue-600'} size={20} />
+              <h2 className={`text-lg sm:text-xl font-bold ${
                 isGameMode ? 'text-cyan-400 font-mono' : 'text-gray-900'
               }`}>
                 {isGameMode ? 'MISSION ANALYTICS' : 'Analytics'}
               </h2>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {Object.entries(stats.byCategory)
                 .sort(([, a], [, b]) => b - a)
                 .map(([category, count]) => (
@@ -683,15 +714,15 @@ function AppContent() {
 
       <button
         onClick={() => setShowReportModal(true)}
-        className={`fixed bottom-8 right-8 w-16 h-16 rounded-full shadow-2xl hover:scale-110 transition-all duration-200 flex items-center justify-center group z-40 ${
+        className={`fixed bottom-6 right-6 sm:bottom-8 sm:right-8 w-14 h-14 sm:w-16 sm:h-16 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center group z-40 ${
           isGameMode
             ? 'bg-cyan-500/20 border-2 border-cyan-500 text-cyan-400 hover:shadow-cyan-500/50 animate-pulse-glow-cyan'
             : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:shadow-blue-500/50'
         }`}
         aria-label={isGameMode ? 'Report New Target' : 'Report a Ghost'}
       >
-        <Plus size={32} className="group-hover:rotate-90 transition-transform duration-200" />
-        <span className={`absolute bottom-20 right-0 text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none ${
+        <Plus size={28} className="sm:w-8 sm:h-8 group-hover:rotate-90 transition-transform duration-200" />
+        <span className={`absolute bottom-16 sm:bottom-20 right-0 text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none hidden sm:block ${
           isGameMode
             ? 'glass-panel text-cyan-300 border border-cyan-500/50 font-mono'
             : 'bg-gray-900 text-white'

@@ -1,10 +1,10 @@
 console.log('Ghost Catcher Extension: Loading...');
 
-const FIREBASE_PROJECT_ID = "ghost-catcher-deel";
-const FIREBASE_API_KEY = "AIzaSyBgGG_ChCi4e_2SOFzNgQNYFzZdyZVuAUE";
-const FIRESTORE_API_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
+const SUPABASE_URL = "https://qjtfpkhlhaimhkxbaoos.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqdGZwa2hsaGFpbWhreGJhb29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc1OTc2NDksImV4cCI6MjA4MzE3MzY0OX0.SZpdeXm2C7iW5Kcsc0kjOwSPSiHVgDOQSH_SlFjA37Q";
+const API_URL = `${SUPABASE_URL}/functions/v1/submit-ghost`;
 
-console.log('Firebase REST API configured');
+console.log('Supabase API configured');
 
 let currentUrl = '';
 let currentTitle = '';
@@ -82,26 +82,29 @@ async function handleSubmit(e) {
     console.log('Attempting to report ghost:', ghostId);
     console.log('Form data:', formData);
 
-    const firestoreDoc = convertToFirestoreFormat(formData);
+    const authToken = await getAuthToken();
+    if (!authToken) {
+      throw new Error('You must be logged in to report ghosts. Please sign in to the Ghost Catcher web app first.');
+    }
 
-    const response = await fetch(`${FIRESTORE_API_URL}/ghosts?key=${FIREBASE_API_KEY}`, {
+    const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+        'apikey': SUPABASE_ANON_KEY,
       },
-      body: JSON.stringify({ fields: firestoreDoc })
+      body: JSON.stringify(formData)
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
     }
 
     const result = await response.json();
-    const docId = result.name.split('/').pop();
 
-    console.log('Ghost successfully reported to Firebase!');
-    console.log('Document ID:', docId);
+    console.log('Ghost successfully reported!');
     console.log('Ghost ID:', ghostId);
 
     showSuccess(ghostId);
@@ -121,38 +124,16 @@ async function handleSubmit(e) {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Report Ghost 👻';
 
-    alert(`Error: ${error.message}\n\nPlease check:\n1. Internet connection\n2. Browser console (F12) for details\n3. Firebase configuration`);
+    alert(`Error: ${error.message}\n\nPlease check:\n1. You are signed in to Ghost Catcher\n2. Your internet connection\n3. Browser console (F12) for details`);
   }
 }
 
-function convertToFirestoreFormat(data) {
-  const firestoreDoc = {};
-
-  for (const [key, value] of Object.entries(data)) {
-    if (value === null) {
-      firestoreDoc[key] = { nullValue: null };
-    } else if (typeof value === 'string') {
-      firestoreDoc[key] = { stringValue: value };
-    } else if (typeof value === 'number') {
-      firestoreDoc[key] = { integerValue: value };
-    } else if (typeof value === 'boolean') {
-      firestoreDoc[key] = { booleanValue: value };
-    } else if (Array.isArray(value)) {
-      firestoreDoc[key] = {
-        arrayValue: {
-          values: value.map(item => {
-            if (typeof item === 'string') return { stringValue: item };
-            if (typeof item === 'number') return { integerValue: item };
-            return { stringValue: String(item) };
-          })
-        }
-      };
-    } else {
-      firestoreDoc[key] = { stringValue: String(value) };
-    }
-  }
-
-  return firestoreDoc;
+async function getAuthToken() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['supabase_auth_token'], (result) => {
+      resolve(result.supabase_auth_token || null);
+    });
+  });
 }
 
 function generateGhostId() {

@@ -52,16 +52,17 @@ export function GameModeSidebar({ user, currentUserId, onExitGameMode, isOpen, o
             onClick={onToggle}
           />
 
-          <div className="fixed inset-y-0 right-0 w-96 bg-gradient-to-b from-gray-900 via-slate-800 to-gray-900 shadow-2xl z-50 animate-slide-in-right overflow-y-auto border-l border-cyan-500/30">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold font-mono text-cyan-400 flex items-center gap-2 glow-text-cyan">
-                  <Ghost className="text-cyan-400" size={28} />
+          <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-gradient-to-b from-gray-900 via-slate-800 to-gray-900 shadow-2xl z-50 animate-slide-in-right overflow-y-auto border-l border-cyan-500/30">
+            <div className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold font-mono text-cyan-400 flex items-center gap-2 glow-text-cyan">
+                  <Ghost className="text-cyan-400" size={24} />
                   BUSTER HQ
                 </h2>
                 <button
                   onClick={onToggle}
-                  className="text-cyan-400 hover:text-cyan-300 text-2xl font-bold transition-colors"
+                  className="text-cyan-400 hover:text-cyan-300 text-2xl font-bold transition-colors p-2"
+                  aria-label="Close sidebar"
                 >
                   ×
                 </button>
@@ -69,48 +70,48 @@ export function GameModeSidebar({ user, currentUserId, onExitGameMode, isOpen, o
 
               {user ? (
                 <>
-                  <div className="glass-panel border border-cyan-500/30 text-cyan-300 rounded-xl p-6 mb-6 shadow-lg">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-16 h-16 bg-cyan-500/20 border-2 border-cyan-500 rounded-full flex items-center justify-center text-3xl font-bold backdrop-blur-sm text-cyan-400">
+                  <div className="glass-panel border border-cyan-500/30 text-cyan-300 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-lg">
+                    <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-cyan-500/20 border-2 border-cyan-500 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-bold backdrop-blur-sm text-cyan-400 flex-shrink-0">
                         {user.displayName.charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <h3 className="text-xl font-bold font-mono text-cyan-300">{user.displayName}</h3>
-                        <p className="text-cyan-400/70 text-sm font-mono">OPERATIVE</p>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg sm:text-xl font-bold font-mono text-cyan-300 truncate">{user.displayName}</h3>
+                        <p className="text-cyan-400/70 text-xs sm:text-sm font-mono">OPERATIVE</p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-slate-800/50 border border-cyan-500/30 rounded-lg p-2 backdrop-blur-sm">
-                        <div className="flex items-center gap-1 mb-1">
-                          <Zap size={14} className="text-cyan-400" />
+                    <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                      <div className="bg-slate-800/50 border border-cyan-500/30 rounded-lg p-1.5 sm:p-2 backdrop-blur-sm">
+                        <div className="flex items-center gap-1 mb-0.5 sm:mb-1">
+                          <Zap size={12} className="text-cyan-400 sm:w-3.5 sm:h-3.5" />
                           <span className="text-xs text-cyan-400/70 font-mono">XP</span>
                         </div>
-                        <div className="text-xl font-bold text-cyan-400 glow-text-cyan">{user.totalPoints}</div>
+                        <div className="text-base sm:text-xl font-bold text-cyan-400 glow-text-cyan">{user.totalPoints}</div>
                       </div>
 
-                      <div className="bg-slate-800/50 border border-cyan-500/30 rounded-lg p-2 backdrop-blur-sm">
-                        <div className="flex items-center gap-1 mb-1">
-                          <TrendingUp size={14} className="text-cyan-400" />
+                      <div className="bg-slate-800/50 border border-cyan-500/30 rounded-lg p-1.5 sm:p-2 backdrop-blur-sm">
+                        <div className="flex items-center gap-1 mb-0.5 sm:mb-1">
+                          <TrendingUp size={12} className="text-cyan-400 sm:w-3.5 sm:h-3.5" />
                           <span className="text-xs text-cyan-400/70 font-mono">LVL</span>
                         </div>
-                        <div className="text-xl font-bold text-cyan-400 glow-text-cyan">{user.level}</div>
+                        <div className="text-base sm:text-xl font-bold text-cyan-400 glow-text-cyan">{user.level}</div>
                       </div>
 
-                      <div className="bg-slate-800/50 border border-cyan-500/30 rounded-lg p-2 backdrop-blur-sm">
-                        <div className="flex items-center gap-1 mb-1">
-                          <Target size={14} className="text-cyan-400" />
+                      <div className="bg-slate-800/50 border border-cyan-500/30 rounded-lg p-1.5 sm:p-2 backdrop-blur-sm">
+                        <div className="flex items-center gap-1 mb-0.5 sm:mb-1">
+                          <Target size={12} className="text-cyan-400 sm:w-3.5 sm:h-3.5" />
                           <span className="text-xs text-cyan-400/70 font-mono">CAUGHT</span>
                         </div>
-                        <div className="text-xl font-bold text-cyan-400 glow-text-cyan">{user.stats.ghostsResolved}</div>
+                        <div className="text-base sm:text-xl font-bold text-cyan-400 glow-text-cyan">{user.stats.ghostsResolved}</div>
                       </div>
 
-                      <div className="bg-slate-800/50 border border-cyan-500/30 rounded-lg p-2 backdrop-blur-sm">
-                        <div className="flex items-center gap-1 mb-1">
-                          <Award size={14} className="text-cyan-400" />
+                      <div className="bg-slate-800/50 border border-cyan-500/30 rounded-lg p-1.5 sm:p-2 backdrop-blur-sm">
+                        <div className="flex items-center gap-1 mb-0.5 sm:mb-1">
+                          <Award size={12} className="text-cyan-400 sm:w-3.5 sm:h-3.5" />
                           <span className="text-xs text-cyan-400/70 font-mono">BADGES</span>
                         </div>
-                        <div className="text-xl font-bold text-cyan-400 glow-text-cyan">{user.badges.length}</div>
+                        <div className="text-base sm:text-xl font-bold text-cyan-400 glow-text-cyan">{user.badges.length}</div>
                       </div>
                     </div>
 
@@ -122,19 +123,19 @@ export function GameModeSidebar({ user, currentUserId, onExitGameMode, isOpen, o
                   </div>
 
                   {user.badges.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="text-lg font-bold font-mono text-cyan-400 mb-3 flex items-center gap-2">
-                        <Award className="text-cyan-400" size={20} />
+                    <div className="mb-4 sm:mb-6">
+                      <h3 className="text-base sm:text-lg font-bold font-mono text-cyan-400 mb-2 sm:mb-3 flex items-center gap-2">
+                        <Award className="text-cyan-400" size={18} />
                         ACHIEVEMENTS
                       </h3>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
                         {user.badges.map((badge) => (
                           <div
                             key={badge.id}
-                            className="glass-panel rounded-lg p-3 border border-cyan-500/30 hover:border-cyan-500/50 transition-all hover:shadow-cyan-500/20"
+                            className="glass-panel rounded-lg p-2 sm:p-3 border border-cyan-500/30 hover:border-cyan-500/50 transition-all hover:shadow-cyan-500/20"
                             title={badge.description}
                           >
-                            <div className="text-2xl mb-1">{badge.icon}</div>
+                            <div className="text-xl sm:text-2xl mb-0.5 sm:mb-1">{badge.icon}</div>
                             <div className="text-xs font-semibold font-mono text-cyan-300 line-clamp-1">
                               {badge.name}
                             </div>
@@ -144,9 +145,9 @@ export function GameModeSidebar({ user, currentUserId, onExitGameMode, isOpen, o
                     </div>
                   )}
 
-                  <div className="mb-6">
-                    <h3 className="text-lg font-bold font-mono text-cyan-400 mb-3 flex items-center gap-2">
-                      <Trophy className="text-yellow-400" size={20} />
+                  <div className="mb-4 sm:mb-6">
+                    <h3 className="text-base sm:text-lg font-bold font-mono text-cyan-400 mb-2 sm:mb-3 flex items-center gap-2">
+                      <Trophy className="text-yellow-400" size={18} />
                       LEADERBOARD
                     </h3>
 
@@ -155,39 +156,39 @@ export function GameModeSidebar({ user, currentUserId, onExitGameMode, isOpen, o
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto"></div>
                       </div>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="space-y-1.5 sm:space-y-2">
                         {leaderboard.slice(0, 10).map((leaderUser, index) => {
                           const isCurrentUser = leaderUser.userId === currentUserId;
                           return (
                             <div
                               key={leaderUser.userId}
-                              className={`glass-panel rounded-lg p-3 shadow-sm border transition-all ${
+                              className={`glass-panel rounded-lg p-2 sm:p-3 shadow-sm border transition-all ${
                                 isCurrentUser
                                   ? 'border-cyan-500 bg-cyan-500/10'
                                   : 'border-cyan-500/30 hover:border-cyan-500/50'
                               }`}
                             >
-                              <div className="flex items-center gap-2">
-                                <div className="text-lg font-bold font-mono w-8 text-center text-cyan-400">
+                              <div className="flex items-center gap-1.5 sm:gap-2">
+                                <div className="text-base sm:text-lg font-bold font-mono w-6 sm:w-8 text-center text-cyan-400 flex-shrink-0">
                                   {getRankIcon(index + 1)}
                                 </div>
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold border-2 border-cyan-500 ${
+                                <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold border-2 border-cyan-500 flex-shrink-0 ${
                                   index < 3 ? 'bg-gradient-to-br from-cyan-500 to-cyan-700' : 'bg-slate-700'
                                 }`}>
                                   {leaderUser.displayName.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-semibold text-sm font-mono text-cyan-300 flex items-center gap-1 truncate">
+                                  <div className="font-semibold text-xs sm:text-sm font-mono text-cyan-300 flex items-center gap-1 truncate">
                                     <span className="truncate">{leaderUser.displayName}</span>
                                     {isCurrentUser && (
-                                      <span className="text-xs bg-cyan-500 text-white px-1.5 py-0.5 rounded-full flex-shrink-0">
+                                      <span className="text-xs bg-cyan-500 text-white px-1 sm:px-1.5 py-0.5 rounded-full flex-shrink-0">
                                         YOU
                                       </span>
                                     )}
                                   </div>
-                                  <div className="text-xs text-cyan-400/70 font-mono flex items-center gap-2">
-                                    <span className="flex items-center gap-1">
-                                      <Zap size={12} className="text-yellow-400" />
+                                  <div className="text-xs text-cyan-400/70 font-mono flex items-center gap-1.5 sm:gap-2">
+                                    <span className="flex items-center gap-0.5 sm:gap-1">
+                                      <Zap size={10} className="text-yellow-400 sm:w-3 sm:h-3" />
                                       {leaderUser.totalPoints}
                                     </span>
                                     <span className="text-cyan-500">•</span>
@@ -219,9 +220,9 @@ export function GameModeSidebar({ user, currentUserId, onExitGameMode, isOpen, o
 
               <button
                 onClick={onExitGameMode}
-                className="w-full glass-panel border border-red-500/50 hover:border-red-500 text-red-400 hover:text-red-300 px-4 py-3 rounded-lg font-bold font-mono flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-red-500/20"
+                className="w-full glass-panel border border-red-500/50 hover:border-red-500 text-red-400 hover:text-red-300 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-bold font-mono flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-red-500/20"
               >
-                <X size={20} />
+                <X size={18} />
                 EXIT GAME MODE
               </button>
             </div>

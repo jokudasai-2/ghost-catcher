@@ -82,8 +82,11 @@ export function LandingPage({ onSignIn }: LandingPageProps) {
                   <Users size={18} />
                   About
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 mb-2">
                   Ghost Catcher was created for Deel in January 2026 by <a href="https://www.linkedin.com/in/johannabassetti/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">Johanna Santos Bassetti</a> (Ghostbuster candidate). Last update: 01/09/2026
+                </p>
+                <p className="text-sm text-gray-600">
+                  <a href="https://github.com/jokudasai-2/ghost-catcher" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">View on GitHub</a>
                 </p>
               </div>
 

@@ -34,18 +34,28 @@ You should see:
 
 ## Using the Extension
 
+### Prerequisites
+**Important**: You must be signed in to the Ghost Catcher web app before using the extension. The extension uses your authentication from the web app.
+
 ### Report a Ghost
 1. Navigate to any webpage where you want to report an operational ghost
 2. Click the Ghost Catcher icon in your toolbar
-3. Fill out the form:
+3. Fill out the basic form:
    - **Title**: Brief description of the ghost
    - **Description**: Detailed explanation
    - **Category**: Select appropriate category
-   - **Impact**: Rate 1-5 using the slider
    - **Email**: Your email address (saved for next time)
-   - **Screenshot** (optional): Capture the current page
-4. Click "Report Ghost 👻"
-5. You'll receive a tracking ID (e.g., GH-123456)
+   - **Impact**: Rate 1-5 using the slider
+   - **Effort to Fix**: Rate 1-5 using the slider
+4. (Optional) Click "Advanced Options" to expand additional fields:
+   - **Reporter Name**: Your full name
+   - **Department**: Your department
+   - **Geography**: Your region
+   - **Risk Type**: Select relevant risk categories (Financial, Operational, etc.)
+   - **URL**: Edit the auto-captured URL if needed
+5. (Optional) Click to upload an image file for visual context
+6. Click "Report Ghost"
+7. You'll receive a tracking ID (e.g., GH-123456)
 
 ### View Your Reports
 1. Open the Ghost Catcher dashboard at your deployed web app URL
@@ -60,19 +70,21 @@ You should see:
 - Verify manifest.json is valid JSON
 
 ### Can't Report Ghosts
+- **Make sure you're signed in** to the Ghost Catcher web app first
 - Check your internet connection
 - Open Chrome DevTools (F12) and look at the Console tab for errors
-- Verify Firebase configuration is correct in popup.js
+- Verify you have a valid authentication token
 
 ### Icons Not Appearing
 - Make sure you have PNG files named exactly: icon16.png, icon48.png, icon128.png
 - Files must be in the `extension/icons/` folder
 - Try reloading the extension after adding icons
 
-### Firebase Errors
-- The extension uses Firebase Firestore for data storage
-- Make sure you have internet connectivity
-- Check that the Firebase project is properly configured
+### Authentication Errors
+- The extension requires you to be signed in to the web app
+- Sign in to Ghost Catcher web app first
+- The auth token is automatically synced to the extension
+- If you sign out of the web app, you'll need to sign in again before using the extension
 
 ## Updating the Extension
 After making changes to the extension files:
@@ -88,7 +100,9 @@ After making changes to the extension files:
 4. Confirm deletion
 
 ## Privacy & Data
-- Ghost reports are stored in Firebase Firestore
-- Screenshots are optional and stored as base64 data
-- Your email is saved locally in Chrome to pre-fill the form
-- All data is associated with your Firebase project
+- Ghost reports are stored in your Supabase database
+- Media uploads are optional and stored as base64 data
+- Your reporter information (email, name, department, geography) is saved locally in Chrome to pre-fill the form
+- Authentication tokens are synced from the web app via Chrome storage
+- All data is associated with your Supabase project
+- All communication is over HTTPS

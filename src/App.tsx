@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { Ghost, Search, Filter, TrendingUp, AlertTriangle, CheckCircle, Clock, Database, Plus, LayoutGrid, List, Flame } from 'lucide-react';
+import { Ghost, Search, Filter, TrendingUp, AlertTriangle, CheckCircle, Clock, Database, Plus, LayoutGrid, List, Flame, LogOut } from 'lucide-react';
 import { useGhosts } from './hooks/useGhosts';
 import { StatCard } from './components/StatCard';
 import { GhostCard } from './components/GhostCard';
@@ -18,9 +18,10 @@ import { calculatePoints } from './utils/points';
 import type { Badge } from './types/game';
 import { useAuth } from './contexts/AuthContext';
 import { AuthModal } from './components/AuthModal';
+import { LandingPage } from './components/LandingPage';
 
 function AppContent() {
-  const { user: authUser, loading: authLoading } = useAuth();
+  const { user: authUser, loading: authLoading, signOut } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const { ghosts, loading, error, updateGhostStatus, updateGhost, addGhost } = useGhosts();
   const { isGameMode, toggleGameMode, currentUserId, setCurrentUserId } = useGameMode();
@@ -124,6 +125,13 @@ function AppContent() {
       console.error(err);
     } finally {
       setIsSeeding(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (error) {
+      console.error('Sign out error:', error);
     }
   };
 
@@ -247,21 +255,7 @@ function AppContent() {
   if (!authUser) {
     return (
       <>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 flex items-center justify-center p-4">
-          <div className="max-w-md w-full text-center">
-            <div className="bg-white rounded-2xl shadow-xl p-8">
-              <Ghost className="text-blue-600 mx-auto mb-4" size={64} />
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Haunted House</h1>
-              <p className="text-gray-600 mb-6">Sign in to access the Ghost Tracking System</p>
-              <button
-                onClick={() => setShowAuthModal(true)}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium"
-              >
-                Sign In / Sign Up
-              </button>
-            </div>
-          </div>
-        </div>
+        <LandingPage onSignIn={() => setShowAuthModal(true)} />
         <AuthModal
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
@@ -360,18 +354,27 @@ function AppContent() {
                     </p>
                   </div>
                 </div>
-                {user && (
-                  <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                    <div className="text-right">
-                      <div className="text-xs text-cyan-400/70 font-mono">XP</div>
-                      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-cyan-400 glow-text-cyan">{user.totalPoints}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-cyan-400/70 font-mono">LVL</div>
-                      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-cyan-400 glow-text-cyan">{user.level}</div>
-                    </div>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                  {user && (
+                    <>
+                      <div className="text-right">
+                        <div className="text-xs text-cyan-400/70 font-mono">XP</div>
+                        <div className="text-lg sm:text-xl lg:text-2xl font-bold text-cyan-400 glow-text-cyan">{user.totalPoints}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs text-cyan-400/70 font-mono">LVL</div>
+                        <div className="text-lg sm:text-xl lg:text-2xl font-bold text-cyan-400 glow-text-cyan">{user.level}</div>
+                      </div>
+                    </>
+                  )}
+                  <button
+                    onClick={handleSignOut}
+                    className="p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20 hover:border-cyan-500/50 transition-colors group"
+                    title="Sign Out"
+                  >
+                    <LogOut size={18} className="group-hover:scale-110 transition-transform" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -397,16 +400,26 @@ function AppContent() {
                   <p className="text-sm sm:text-base text-gray-600">Operational Intelligence Dashboard</p>
                 </div>
               </div>
-              {ghosts.length === 0 && (
+              <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                {ghosts.length === 0 && (
+                  <button
+                    onClick={handleSeedData}
+                    disabled={isSeeding}
+                    className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-1 sm:flex-none justify-center"
+                  >
+                    <Database size={18} />
+                    <span className="sm:inline">{isSeeding ? 'Adding...' : 'Add Demo Data'}</span>
+                  </button>
+                )}
                 <button
-                  onClick={handleSeedData}
-                  disabled={isSeeding}
-                  className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto justify-center"
+                  onClick={handleSignOut}
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors group"
+                  title="Sign Out"
                 >
-                  <Database size={18} />
-                  <span className="sm:inline">{isSeeding ? 'Adding...' : 'Add Demo Data'}</span>
+                  <LogOut size={18} className="group-hover:scale-110 transition-transform" />
+                  <span className="hidden sm:inline">Sign Out</span>
                 </button>
-              )}
+              </div>
             </div>
             <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
               <div className="flex items-center gap-2">

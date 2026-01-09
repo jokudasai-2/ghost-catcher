@@ -8,7 +8,7 @@ console.log('Supabase API configured');
 
 let currentUrl = '';
 let currentTitle = '';
-let screenshotData = null;
+let mediaData = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('DOM Content Loaded');
@@ -21,13 +21,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('contextUrl').textContent = currentUrl.length > 50 ? currentUrl.substring(0, 50) + '...' : currentUrl;
   document.getElementById('contextTime').textContent = new Date().toLocaleString();
+  document.getElementById('url').value = currentUrl;
 
   const impactSlider = document.getElementById('impact');
   const impactValue = document.getElementById('impactValue');
+  const effortSlider = document.getElementById('effort');
+  const effortValue = document.getElementById('effortValue');
 
   impactSlider.addEventListener('input', (e) => {
     impactValue.textContent = e.target.value;
   });
+
+  effortSlider.addEventListener('input', (e) => {
+    effortValue.textContent = e.target.value;
+  });
+
+  document.getElementById('advancedToggle').addEventListener('click', () => {
+    const toggle = document.getElementById('advancedToggle');
+    const content = document.getElementById('advancedContent');
+    toggle.classList.toggle('active');
+    content.classList.toggle('show');
+  });
+
+  document.getElementById('uploadArea').addEventListener('click', () => {
+    document.getElementById('mediaInput').click();
+  });
+
+  document.getElementById('mediaInput').addEventListener('change', handleMediaUpload);
+  document.getElementById('removeMediaBtn').addEventListener('click', removeMedia);
 
   document.getElementById('ghostForm').addEventListener('submit', handleSubmit);
 
@@ -35,39 +56,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.close();
   });
 
-  document.getElementById('screenshotBtn').addEventListener('click', takeScreenshot);
-
   document.getElementById('reportAnotherBtn').addEventListener('click', () => {
     document.getElementById('successView').classList.remove('show');
-    document.getElementById('formView').style.display = 'block';
+    document.getElementById('formView').style.display = 'flex';
     resetForm();
   });
+
+  loadSavedReporterInfo();
 });
 
 async function handleSubmit(e) {
   e.preventDefault();
 
-  const submitBtn = e.target.querySelector('.submit-btn');
+  const submitBtn = document.getElementById('submitBtn');
   submitBtn.disabled = true;
-  submitBtn.textContent = 'Reporting Ghost...';
+  submitBtn.textContent = 'Reporting...';
 
   const ghostId = generateGhostId();
   const now = new Date();
 
+  const riskCheckboxes = document.querySelectorAll('input[name="risk"]:checked');
+  const riskTypes = Array.from(riskCheckboxes).map(cb => cb.value);
+
+  const email = document.getElementById('email').value.trim();
+  const reporter = document.getElementById('reporter').value.trim();
+  const department = document.getElementById('department').value;
+  const geography = document.getElementById('geography').value;
+
   const formData = {
     id: ghostId,
-    title: document.getElementById('title').value,
-    description: document.getElementById('description').value,
+    title: document.getElementById('title').value.trim(),
+    description: document.getElementById('description').value.trim(),
     category: document.getElementById('category').value,
     impact: parseInt(document.getElementById('impact').value),
-    effort: 3,
-    email: '',
-    reporterEmail: '',
-    reporter: 'Anonymous',
-    department: 'Not specified',
-    geography: 'Global',
-    riskType: [],
-    url: currentUrl,
+    effort: parseInt(document.getElementById('effort').value),
+    email: email,
+    reporterEmail: email,
+    reporter: reporter || email.split('@')[0] || 'Anonymous',
+    department: department || 'Not specified',
+    geography: geography || 'Global',
+    riskType: riskTypes,
+    url: document.getElementById('url').value.trim() || currentUrl,
     pageTitle: currentTitle,
     timestamp: now.toISOString(),
     dateReported: now.toISOString().split('T')[0],
@@ -75,12 +104,11 @@ async function handleSubmit(e) {
     assignedTo: null,
     resolutionNotes: '',
     daysOpen: 0,
-    screenshot: screenshotData
+    screenshot: mediaData
   };
 
   try {
     console.log('Attempting to report ghost:', ghostId);
-    console.log('Form data:', formData);
 
     const authToken = await getAuthToken();
     if (!authToken) {
@@ -107,6 +135,8 @@ async function handleSubmit(e) {
     console.log('Ghost successfully reported!');
     console.log('Ghost ID:', ghostId);
 
+    saveReporterInfo(email, reporter, department, geography);
+
     showSuccess(ghostId);
 
     chrome.runtime.sendMessage({
@@ -116,13 +146,9 @@ async function handleSubmit(e) {
 
   } catch (error) {
     console.error('Error reporting ghost:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack
-    });
 
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Report Ghost 👻';
+    submitBtn.textContent = 'Report Ghost';
 
     alert(`Error: ${error.message}\n\nPlease check:\n1. You are signed in to Ghost Catcher\n2. Your internet connection\n3. Browser console (F12) for details`);
   }
@@ -142,31 +168,71 @@ function generateGhostId() {
   return `GH-${timestamp.toString().slice(-6)}${random}`;
 }
 
-async function takeScreenshot() {
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+function handleMediaUpload(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
 
-    chrome.tabs.captureVisibleTab(null, { format: 'png' }, (dataUrl) => {
-      if (chrome.runtime.lastError) {
-        alert('Screenshot failed: ' + chrome.runtime.lastError.message);
-        return;
-      }
-
-      screenshotData = dataUrl;
-
-      const preview = document.getElementById('screenshotPreview');
-      const img = document.getElementById('screenshotImg');
-      img.src = dataUrl;
-      preview.classList.add('show');
-
-      document.getElementById('screenshotBtn').textContent = '✅ Screenshot Captured';
-      document.getElementById('screenshotBtn').style.background = '#d4edda';
-      document.getElementById('screenshotBtn').style.borderColor = '#c3e6cb';
-    });
-  } catch (error) {
-    console.error('Screenshot error:', error);
-    alert('Unable to take screenshot. Please check permissions.');
+  if (!file.type.startsWith('image/')) {
+    alert('Please upload an image file (PNG, JPG, etc.)');
+    return;
   }
+
+  if (file.size > 10 * 1024 * 1024) {
+    alert('File size must be less than 10MB');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    mediaData = reader.result;
+
+    const uploadArea = document.getElementById('uploadArea');
+    const preview = document.getElementById('mediaPreview');
+    const img = document.getElementById('mediaImg');
+
+    img.src = mediaData;
+    uploadArea.classList.add('has-file');
+    preview.classList.add('show');
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeMedia() {
+  mediaData = null;
+
+  const uploadArea = document.getElementById('uploadArea');
+  const preview = document.getElementById('mediaPreview');
+  const input = document.getElementById('mediaInput');
+
+  uploadArea.classList.remove('has-file');
+  preview.classList.remove('show');
+  input.value = '';
+}
+
+function loadSavedReporterInfo() {
+  chrome.storage.local.get(['ghostReporter'], (result) => {
+    if (result.ghostReporter) {
+      try {
+        const data = JSON.parse(result.ghostReporter);
+        if (data.email) document.getElementById('email').value = data.email;
+        if (data.reporter) document.getElementById('reporter').value = data.reporter;
+        if (data.department) document.getElementById('department').value = data.department;
+        if (data.geography) document.getElementById('geography').value = data.geography;
+      } catch (e) {
+        console.error('Error loading saved reporter info:', e);
+      }
+    }
+  });
+}
+
+function saveReporterInfo(email, reporter, department, geography) {
+  const data = {
+    email: email,
+    reporter: reporter,
+    department: department,
+    geography: geography
+  };
+  chrome.storage.local.set({ ghostReporter: JSON.stringify(data) });
 }
 
 function showSuccess(ghostId) {
@@ -191,14 +257,18 @@ function resetForm() {
   document.getElementById('ghostForm').reset();
   document.getElementById('impact').value = 3;
   document.getElementById('impactValue').textContent = '3';
-  screenshotData = null;
+  document.getElementById('effort').value = 3;
+  document.getElementById('effortValue').textContent = '3';
+  document.getElementById('url').value = currentUrl;
 
-  const preview = document.getElementById('screenshotPreview');
-  preview.classList.remove('show');
+  removeMedia();
 
-  document.getElementById('screenshotBtn').textContent = '📸 Add Screenshot (Optional)';
-  document.getElementById('screenshotBtn').style.background = '#edf2f7';
-  document.getElementById('screenshotBtn').style.borderColor = '#cbd5e0';
+  const advancedToggle = document.getElementById('advancedToggle');
+  const advancedContent = document.getElementById('advancedContent');
+  advancedToggle.classList.remove('active');
+  advancedContent.classList.remove('show');
+
+  loadSavedReporterInfo();
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
